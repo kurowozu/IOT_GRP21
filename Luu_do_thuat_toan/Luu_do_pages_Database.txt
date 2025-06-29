@@ -1,0 +1,38 @@
+START
+  |
+  ├── useEffect() [on mount]
+  |     ├── setLoading(true)
+  |     ├── Gọi API (3 nguồn dữ liệu):
+  |     |     ├─ sensor_data
+  |     |     ├─ button_states
+  |     |     └─ history_log
+  |     └── set dữ liệu nếu thay đổi
+  |
+  ├── Người dùng nhập vào ô Search
+  |     └── Lọc dữ liệu theo search cho:
+  |            ├─ filteredSensorData
+  |            ├─ filteredButtonStates
+  |            └─ filteredHistoryLog
+  |
+  ├── Người dùng chọn Tab
+  |     ├── sensor_data → hiển thị bảng Sensor Data
+  |     ├── button_states → hiển thị bảng Button States
+  |     └── history_log → hiển thị bảng History Log
+  |
+  ├── Bảng dữ liệu:
+  |     └── Lọc & phân trang
+  |           ├── Sắp xếp theo thời gian
+  |           └── Nếu !showAll → hiển thị 40%
+  |
+  ├── Người dùng nhấn "Xem thêm"
+  |     └── setShowAll(true) → hiển thị toàn bộ dữ liệu
+  |
+  ├── Người dùng nhấn "Xuất Excel"
+  |     └── Tạo Excel:
+  |           ├── Chọn sheet theo Tab
+  |           └── Xuất file .xlsx theo thời gian
+  |
+  └── Hiển thị bảng + phân trang:
+        ├── Tính chỉ số phân trang
+        └── Hiển thị tối đa 5 trang + "..."
+              └── Người dùng chuyển trang → setCurrentPage

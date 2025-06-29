@@ -1,0 +1,33 @@
+Khởi động chương trình
+│
+├── Kết nối MySQL
+│   ├── Thành công → In log ✅
+│   └── Thất bại  → In lỗi ❌
+│
+├── Tạo Express app (HTTP server)
+│   └── Khai báo các API:
+│       ├── GET /api/sensor → Trả dữ liệu hiện tại
+│       ├── GET /api/buttons → Trả trạng thái nút
+│       ├── GET /api/history → Trả lịch sử RAM
+│       ├── POST /api/buttons → Cập nhật nút (gửi ESP32)
+│       ├── POST /api/thresholds → Cập nhật ngưỡng cảnh báo
+│       ├── DELETE /api/history → Xoá lịch sử RAM
+│       ├── GET /api/mysql/... → Truy vấn MySQL (sensor, log, chart)
+│       └── POST /api/esp32/send-buttons → Gửi nút tới ESP32
+│
+├── Khởi động WebSocket server (port 3002)
+│   └── Khi ESP32 kết nối:
+│       ├── Lưu socket vào esp32Socket
+│       ├── Lắng nghe dữ liệu:
+│       │   └── Nếu hợp lệ:
+│       │       ├── Tính `status` và `alertLevel`
+│       │       ├── Lưu vào:
+│       │       │   ├── sensor_data
+│       │       │   ├── button_states
+│       │       │   └── history_log
+│       │       ├── Cập nhật `sensorData`, `history` trong RAM
+│       │       └── In log nhận dữ liệu
+│       └── Khi ESP32 ngắt kết nối → Xoá esp32Socket
+│
+└── Chạy HTTP server (port 3001)
+    └── In các địa chỉ LAN + localhost

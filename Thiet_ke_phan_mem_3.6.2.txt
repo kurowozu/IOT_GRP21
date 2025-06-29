@@ -1,0 +1,84 @@
+### 3.6.2. THIẾT KẾ PHẦN MỀM THEO DÕI HOẠT ĐỘNG HỆ THỐNG
+
+Hệ thống phần mềm được thiết kế theo kiến trúc 3 lớp (3-Tier Architecture) hiện đại, bao gồm: Lớp trình diễn (Frontend), Lớp ứng dụng (Backend), và Lớp thiết bị (Firmware). Mỗi lớp có một vai trò và trách nhiệm riêng biệt, giao tiếp với nhau qua các giao thức mạng tiêu chuẩn để đảm bảo tính module hóa, dễ bảo trì và mở rộng.
+
+#### a. Sơ đồ kiến trúc tổng thể
+
+[SƠ ĐỒ KIẾN TRÚC TỔNG THỂ]
+(Mô tả: Sơ đồ thể hiện luồng dữ liệu giữa Người dùng, Giao diện Web, Backend Server, Cơ sở dữ liệu và thiết bị ESP32)
+
+**Luồng hoạt động chính:**
+
+*   **Từ thiết bị lên người dùng:**
+    1.  **ESP32** liên tục đọc dữ liệu từ các cảm biến khoảng cách, đóng gói thành một gói tin JSON và gửi đến **Backend** qua kết nối WebSocket.
+    2.  **Backend** nhận dữ liệu, xử lý, phân loại trạng thái (`normal`, `warning`, `danger`) và lưu trữ vào **Cơ sở dữ liệu MySQL**.
+    3.  **Giao diện Web (Frontend)** định kỳ gửi yêu cầu đến **Backend** để lấy dữ liệu mới nhất và hiển thị cho người dùng.
+
+*   **Từ người dùng xuống thiết bị:**
+    1.  **Người dùng** tương tác với **Giao diện Web**, ví dụ nhấn nút bật/tắt đèn.
+    2.  **Frontend** gửi một yêu cầu API (ví dụ: `POST /api/buttons`) đến **Backend**.
+    3.  **Backend** nhận yêu cầu và ngay lập tức chuyển tiếp lệnh này đến **ESP32** qua kết nối WebSocket.
+    4.  **ESP32** nhận lệnh và điều khiển thiết bị ngoại vi tương ứng (ví dụ: bật Relay).
+
+#### b. Chi tiết Lớp Thiết bị (Firmware trên ESP32)
+
+Đây là bộ não của hệ thống vật lý, chịu trách nhiệm thu thập dữ liệu và thực thi lệnh.
+
+*   **Công nghệ:** Lập trình bằng C++ trên nền tảng Arduino.
+*   **Thư viện chính:**
+    *   `WiFi.h`: Để kết nối vào mạng WiFi cục bộ.
+    *   `WebSocketsClient.h`: Để thiết lập và duy trì kết nối hai chiều, thời gian thực với Backend.
+    *   `ArduinoJson.h`: Để mã hóa và giải mã các gói tin JSON một cách hiệu quả.
+    *   `Adafruit_SSD1306.h`: Để điều khiển màn hình OLED hiển thị thông tin trạng thái.
+*   **Nhiệm vụ:**
+    *   **Khởi tạo:** Kết nối WiFi, khởi tạo các chân (pin) cho cảm biến, nút nhấn, relay và kết nối tới máy chủ WebSocket tại địa chỉ `ws://192.168.45.65:3002`.
+    *   **Gửi dữ liệu:** Trong vòng lặp `loop()`, ESP32 đo khoảng cách từ hai cảm biến. Nếu có sự thay đổi đáng kể, nó sẽ tạo một chuỗi JSON và gửi đi.
+        *   **Định dạng JSON gửi đi:**
+            ```json
+            {
+              "sensor1": 25.5,
+              "sensor2": 30.2,
+              "buttons": [false, true, false, false, true, false]
+            }
+            ```
+    *   **Nhận lệnh:** ESP32 lắng nghe các sự kiện từ WebSocket.
+        *   Khi nhận được gói tin chứa `"buttons"`, nó sẽ duyệt qua mảng và cập nhật trạng thái các rơle, đèn LED và còi tương ứng.
+        *   Khi nhận được gói tin chứa `"thresholds"`, nó sẽ cập nhật các biến ngưỡng cảnh báo cục bộ.
+    *   **Xử lý cục bộ:** Tự động điều khiển còi và đèn LED nhấp nháy dựa trên giá trị cảm biến và ngưỡng đã lưu. Điều này đảm bảo hệ thống có thể đưa ra cảnh báo tức thì mà không cần chờ lệnh từ server.
+
+#### c. Chi tiết Lớp Ứng dụng (Backend Server)
+
+Backend là trung tâm điều phối, xử lý logic nghiệp vụ và quản lý dữ liệu.
+
+*   **Công nghệ:** Node.js và framework Express.js.
+*   **Lý do chọn:** Node.js có kiến trúc bất đồng bộ, non-blocking, rất phù hợp để xử lý đồng thời nhiều kết nối I/O mà không bị nghẽn.
+*   **Kiến trúc giao tiếp kép:**
+    1.  **WebSocket Server (cổng 3002):** Dành riêng cho giao tiếp với ESP32. Sử dụng thư viện `ws`. Đây là một kết nối stateful, cho phép server chủ động gửi lệnh xuống ESP32.
+    2.  **HTTP/REST API Server (cổng 3001):** Dành cho giao tiếp với Frontend. Sử dụng Express.js. Đây là giao tiếp stateless, phù hợp với mô hình yêu cầu-phản hồi của web.
+*   **Các API Endpoint chính:**
+    *   `GET /api/mysql/sensor_data`: Cung cấp lịch sử dữ liệu cảm biến.
+    *   `GET /api/mysql/history_log`: Cung cấp nhật ký các sự kiện cảnh báo.
+    *   `POST /api/buttons`: Nhận lệnh điều khiển từ Frontend và chuyển tiếp cho ESP32.
+    *   `POST /api/thresholds`: Cập nhật ngưỡng cảnh báo và gửi xuống ESP32.
+*   **Luồng xử lý dữ liệu từ ESP32:**
+    1.  Nhận chuỗi JSON qua WebSocket.
+    2.  Giải mã chuỗi JSON.
+    3.  Gọi hàm `getStatus()` để xác định mức độ cảnh báo.
+    4.  Tạo một bản ghi mới với ID duy nhất (`uuidv4`).
+    5.  Thực thi các câu lệnh `INSERT` để lưu dữ liệu vào các bảng trong MySQL.
+
+#### d. Chi tiết Lớp Trình diễn (Frontend)
+
+Đây là giao diện đồ họa người dùng (GUI) chạy trên trình duyệt để theo dõi và điều khiển hệ thống.
+
+*   **Công nghệ:** React (sử dụng Vite) và TailwindCSS.
+*   **Lý do chọn:** React cho phép xây dựng giao diện theo dạng các thành phần (components) có thể tái sử dụng. Vite cung cấp môi trường phát triển nhanh. TailwindCSS giúp tạo kiểu giao diện nhất quán.
+*   **Cấu trúc:**
+    *   `App.tsx`: Tệp gốc, quản lý việc chuyển đổi giữa các trang.
+    *   **Pages:** `Dashboard.tsx`, `Charts.tsx`, `Database.tsx`, `ProjectInfo.tsx`.
+    *   **Components:** `SensorCard`, `ControlPanel`, `StatisticsPanel`.
+*   **Luồng hoạt động của trang Dashboard:**
+    1.  Sử dụng `useEffect` hook của React để gọi API khi trang được tải.
+    2.  Gọi API `GET /api/sensor` và `GET /api/buttons` để lấy trạng thái ban đầu.
+    3.  Thiết lập `setInterval` để lặp lại việc gọi các API này mỗi 5 giây để cập nhật giao diện.
+    4.  Khi người dùng nhấn nút, hàm xử lý sẽ gửi yêu cầu `POST /api/buttons` tới backend. 

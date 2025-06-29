@@ -1,0 +1,20 @@
+Dashboard
+├── Clock (Đồng hồ thời gian thực)
+├── Weather (Thời tiết - Open-Meteo API)
+├── Header (Thông tin hệ thống + trạng thái tổng thể)
+├── Sensor Panel
+│   ├── SensorCard: Cảm biến 1
+│   ├── SensorCard: Cảm biến 2
+│   └── GoogleMap (iframe nhúng)
+├── Button Panel
+│   ├── ButtonCard × 6 (nút điều khiển thiết bị)
+│   └── Threshold Settings (Cài đặt ngưỡng cảnh báo)
+├── API & WebSocket
+│   ├── /api/sensor (GET)
+│   ├── /api/buttons (GET/POST)
+│   ├── /api/thresholds (POST)
+│   └── ws://localhost:3002 (nhận `systemInfo`)
+└── Hooks
+    ├── useEffect (sensor data)
+    ├── useEffect (button state)
+    └── useEffect (WebSocket)

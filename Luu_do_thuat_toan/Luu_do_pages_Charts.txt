@@ -1,0 +1,37 @@
+Charts.tsx
+│
+├── State khởi tạo:
+│   ├── chartData ← chứa labels, sensor1/2, alertCounts, activity
+│   └── statusHistory ← chứa mảng trạng thái cảm biến theo thời gian
+│
+├── useEffect 1 (chart-data):
+│   ├── Gọi API mỗi 5 giây: GET /api/mysql/chart-data
+│   ├── Nếu dữ liệu khác trước → setChartData
+│   └── Nếu lỗi → reset dữ liệu về mặc định
+│
+├── useEffect 2 (status-history):
+│   ├── Gọi API mỗi 5 giây: GET /api/mysql/sensor-status-history
+│   ├── setStatusHistory nếu thành công
+│   └── Nếu lỗi → xóa dữ liệu
+│
+├── Chuyển đổi trạng thái cảm biến:
+│   ├── statusToNumber():
+│   │     'normal' → 0
+│   │     'warning' → 1
+│   │     'danger' → 2
+│   ├── statusLabels ← mảng thời gian
+│   └── statusData ← mảng số hóa từ trạng thái
+│
+├── Giao diện chính:
+│   ├── Header
+│   ├── Biểu đồ phân bố cảnh báo:
+│   │     - Tổng cộng
+│   │     - Mức thấp / trung bình / cao
+│   ├── Biểu đồ sensor theo giờ (Line chart):
+│   │     - Sensor 1 (màu xanh lá)
+│   │     - Sensor 2 (màu xanh lam)
+│   └── Biểu đồ trạng thái cảm biến:
+│         - Theo thời gian
+│         - Hiển thị trạng thái bằng màu + tooltip
+│
+└── Kết thúc render component

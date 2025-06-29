@@ -1,0 +1,62 @@
+📦 Khởi tạo setup()
+  ├─ Serial.begin
+  ├─ Khởi tạo OLED
+  ├─ pinMode cho cảm biến, relay, LED, buzzer, button
+  ├─ Kết nối WiFi (SSID + password)
+  ├─ Hiển thị địa chỉ IP trên OLED
+  └─ Kết nối WebSocket tới ws://192.168.45.65:3002/ws
+
+🔁 Vòng lặp loop()
+  ├─ webSocket.loop()
+  ├─ readButtons()
+  └─ Mỗi 20ms:
+      ├─ measureDistance() cho sensor1 và sensor2
+      ├─ Nếu chênh lệch lớn hơn 0.3cm → cập nhật:
+      |     └─ sendData(d1, d2)
+      ├─ handleBuzzer(d1, d2)
+      ├─ handleLed(d1, d2)
+      └─ updateOLED(d1, d2)
+
+🔁 Hàm readButtons()
+  ├─ Duyệt từng button:
+  |     └─ Nếu nhấn lần đầu → Toggle trạng thái
+  └─ applyButtonState() theo trạng thái
+       ├─ 0-3: điều khiển relay
+       ├─ 4: điều khiển LED
+       └─ 5: điều khiển buzzer
+
+📨 WebSocket.onEvent()
+  └─ Nếu type là TEXT:
+      ├─ Parse JSON
+      ├─ Nếu có `buttons[]`:
+      |     └─ Cập nhật trạng thái nút nhấn
+      └─ Nếu có `thresholds`:
+            ├─ Cập nhật warningThreshold
+            └─ Cập nhật dangerThreshold
+
+📤 sendData(d1, d2)
+  └─ Gửi JSON:
+      ├─ sensor1, sensor2
+      └─ buttons[] (trạng thái 6 nút nhấn)
+
+📡 measureDistance(trig, echo)
+  └─ Gửi xung trigger → đọc echo → tính khoảng cách (cm)
+
+🔔 handleBuzzer(d1, d2)
+  ├─ Nếu ButtonStates[5] == false → buzzer OFF
+  ├─ Nếu < dangerThreshold → chớp nhanh (200ms)
+  ├─ Nếu < warningThreshold → chớp chậm (800ms)
+  └─ Ngược lại → buzzer OFF
+
+💡 handleLed(d1, d2)
+  ├─ Nếu ButtonStates[4] == false → LED OFF
+  ├─ Nếu < dangerThreshold → LED OFF
+  ├─ Nếu < warningThreshold → LED nhấp nháy 500ms
+  └─ Ngược lại → LED ON
+
+🖥 updateOLED(d1, d2)
+  └─ Hiển thị thông tin:
+      ├─ Khoảng cách
+      ├─ Trạng thái LED, buzzer
+      └─ Trạng thái relay
+
